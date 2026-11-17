@@ -8,6 +8,7 @@ services:
     volumes:
       - data:/data
       - edge:/run/openmausbot
+      - /home/zyke/openmausbot-ssh:/data/.config/ssh-mcp:ro
     environment:
       OMB_PORT: "8799"
       OMB_WEBHOOK_PORT: "8800"
