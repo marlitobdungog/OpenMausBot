@@ -1,7 +1,7 @@
 # Local Docker Compose
 
 From the repository root, run `docker compose up -d --build`, then open
-http://localhost:8080. Docker with Linux containers is required.
+http://localhost:8081. Docker with Linux containers is required.
 Compose supplies defaults; no `.env` file is required.
 The application container uses Docker's init process to reap orphaned agent
 subprocesses.
@@ -59,8 +59,8 @@ host. For the desktop app or a phone on the same network, publish the port
 there and name the address they use (only on a machine behind your router):
 
 ```sh
-OMB_BIND_ADDRESS=0.0.0.0 OMB_PUBLIC_URL=http://192.168.1.20:8080 docker compose up -d
-docker compose exec omb openmausbot pair    # Link http://192.168.1.20:8080/pair#code=…
+OMB_BIND_ADDRESS=0.0.0.0 OMB_PUBLIC_URL=http://192.168.1.20:8081 docker compose up -d
+docker compose exec omb openmausbot pair    # Link http://192.168.1.20:8081/pair#code=…
 ```
 
 Paste that link into MausBot under **＋ → Connect to a server**; the app

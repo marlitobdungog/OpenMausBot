@@ -102,7 +102,7 @@ somewhere else. Fix that, then run `npx openmausbot status` to check again.
 From a checkout of the repository:
 
 ```sh
-docker compose up -d --build                  # http://localhost:8080 on this machine
+docker compose up -d --build                  # http://localhost:8081 on this machine
 docker compose exec omb openmausbot pair      # a code, and a sign-in link for this machine's browser
 ```
 
@@ -356,7 +356,7 @@ for Windows/WSL2 and Linux x64. It is separate from the Docker deployment below.
 
 For local Docker Desktop or private Tailscale access without a public domain,
 use the [local Compose setup](../deploy/local/README.md). It defaults to
-`http://localhost:8080` and supports optional `.env` overrides.
+`http://localhost:8081` and supports optional `.env` overrides.
 
 On Ubuntu, the [installer](deploy-vps.md#quick-start-one-command-on-your-own-domain)
 sets this up with one command, keeping the data in `/opt/openmausbot/data`.

@@ -1,0 +1,46 @@
+#!/bin/sh
+set -eu
+
+APP_NAME="openmausbot"
+BIN_NAME="openmausbot"
+OPENMAUSBOT_ENV_FILE="${OPENMAUSBOT_ENV_FILE:-/etc/openmausbot/.env}"
+OPENMAUSBOT_RELEASE_FILE="${OPENMAUSBOT_RELEASE_FILE:-/etc/openmausbot/release.json}"
+OPENMAUSBOT_COMPOSE_FILE="${OPENMAUSBOT_COMPOSE_FILE:-/opt/openmausbot/docker-compose.yml}"
+
+if [ ! -r "$OPENMAUSBOT_RELEASE_FILE" ]; then
+  echo "$APP_NAME: release metadata not found or unreadable: $OPENMAUSBOT_RELEASE_FILE" >&2
+  exit 1
+fi
+
+release_value() {
+  key="$1"
+  value="$(sed -n 's/.*"'"$key"'"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$OPENMAUSBOT_RELEASE_FILE" | head -n 1)"
+  if [ -z "$value" ]; then
+    echo "$APP_NAME: image $key is missing from $RELEASE_FILE" >&2
+    exit 1
+  fi
+  printf '%s\n' "$value"
+}
+
+API="$(release_value API)"
+export API
+
+if [ -f "$OPENMAUSBOT_ENV_FILE" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "$OPENMAUSBOT_ENV_FILE"
+  set +a
+fi
+
+export API
+
+case "${1:-}" in
+  up) shift; exec docker compose -f "$OPENMAUSBOT_COMPOSE_FILE" up -d "$@" ;;
+  down) shift; exec docker compose -f "$OPENMAUSBOT_COMPOSE_FILE" down "$@" ;;
+  pull) shift; exec docker compose -f "$OPENMAUSBOT_COMPOSE_FILE" pull "$@" ;;
+  restart) shift; exec docker compose -f "$OPENMAUSBOT_COMPOSE_FILE" restart "$@" ;;
+  *)
+    printf 'Usage:\n  %s up\n  %s down\n  %s pull\n  %s restart\n' "$BIN_NAME" "$BIN_NAME" "$BIN_NAME" "$BIN_NAME"
+    exit 1
+    ;;
+esac

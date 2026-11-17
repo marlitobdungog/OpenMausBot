@@ -25,8 +25,8 @@ services:
       OMB_WEBHOOK_SOCKET: /run/openmausbot/hooks.sock
       # The name the desktop app shows for this server (a container's own hostname is a random id).
       OMB_SERVER_NAME: ${OMB_SERVER_NAME:-mausbot-docker}
-      OMB_PUBLIC_URL: ${OMB_PUBLIC_URL:-http://localhost:${OMB_HTTP_PORT:-8080}}
-      OMB_WEBHOOK_PUBLIC_URL: ${OMB_WEBHOOK_PUBLIC_URL:-${OMB_PUBLIC_URL:-http://localhost:${OMB_HTTP_PORT:-8080}}}
+      OMB_PUBLIC_URL: ${OMB_PUBLIC_URL:-http://localhost:${OMB_HTTP_PORT:-8081}}
+      OMB_WEBHOOK_PUBLIC_URL: ${OMB_WEBHOOK_PUBLIC_URL:-${OMB_PUBLIC_URL:-http://localhost:${OMB_HTTP_PORT:-8081}}}
       # "1": phones pair by QR through MausBot Relay (docs/phone-relay-server.md). Sign the
       # container in once first: docker compose exec omb openmausbot login --relay
       OMB_PHONE_RELAY: ${OMB_PHONE_RELAY:-}
@@ -44,9 +44,9 @@ services:
     image: ${CADDY_IMAGE:-caddy:2}
     restart: unless-stopped
     ports:
-      - "${OMB_BIND_ADDRESS:-127.0.0.1}:${OMB_HTTP_PORT:-8080}:80"
+      - "${OMB_BIND_ADDRESS:-127.0.0.1}:${OMB_HTTP_PORT:-8081}:80"
     environment:
-      OMB_HTTPS_HOST: ${OMB_HTTPS_HOST:-}
+      OMB_HTTPS_HOST: ${OMB_HTTPS_HOST:-https-disabled.invalid}
       OMB_BIND_ADDRESS: ${OMB_BIND_ADDRESS:-127.0.0.1}
       OMB_TRUSTED_PROXY_CIDRS: ${OMB_TRUSTED_PROXY_CIDRS:-}
     command:

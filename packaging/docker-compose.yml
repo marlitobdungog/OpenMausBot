@@ -1,0 +1,73 @@
+name: ${COMPOSE_PROJECT_NAME:-openmausbot}
+services:
+  omb:
+    image: ${API:?API image is missing from release.json}
+    init: true
+    shm_size: 512m
+    restart: unless-stopped
+    volumes:
+      - data:/data
+      - edge:/run/openmausbot
+    environment:
+      OMB_PORT: "8799"
+      OMB_WEBHOOK_PORT: "8800"
+      OMB_TUNNEL_SOCKET: /run/openmausbot/http.sock
+      OMB_WEBHOOK_SOCKET: /run/openmausbot/hooks.sock
+      OMB_SERVER_NAME: ${OMB_SERVER_NAME:-mausbot-docker}
+      OMB_PUBLIC_URL: ${OMB_PUBLIC_URL:-http://localhost:${OMB_HTTP_PORT:-8081}}
+      OMB_WEBHOOK_PUBLIC_URL: ${OMB_WEBHOOK_PUBLIC_URL:-${OMB_PUBLIC_URL:-http://localhost:${OMB_HTTP_PORT:-8081}}}
+      OMB_SIGNIN_EMAILS:
+      OMB_SIGNIN_MEMBER_EMAILS:
+      OMB_SIGNIN_SMTP_URL:
+      OMB_SIGNIN_SMTP_FROM:
+      OMB_PHONE_RELAY: ${OMB_PHONE_RELAY:-}
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8799/api/health', { signal: AbortSignal.timeout(4000) }).then(async r => { if (!r.ok || !(await r.text()).includes('openmausbot')) process.exit(1); }).catch(() => process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+
+  caddy:
+    image: ${CADDY_IMAGE:-caddy:2}
+    restart: unless-stopped
+    ports:
+      - "${OMB_BIND_ADDRESS:-127.0.0.1}:${OMB_HTTP_PORT:-8081}:80"
+    environment:
+      OMB_HTTPS_HOST: ${OMB_HTTPS_HOST:-https-disabled.invalid}
+      OMB_BIND_ADDRESS: ${OMB_BIND_ADDRESS:-127.0.0.1}
+      OMB_TRUSTED_PROXY_CIDRS: ${OMB_TRUSTED_PROXY_CIDRS:-}
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        if [ -n "$$OMB_HTTPS_HOST" ] && [ "$$OMB_BIND_ADDRESS" != "127.0.0.1" ] && [ -z "$$OMB_TRUSTED_PROXY_CIDRS" ]; then
+          echo "OMB_HTTPS_HOST with OMB_BIND_ADDRESS=$$OMB_BIND_ADDRESS requires OMB_TRUSTED_PROXY_CIDRS naming the TLS terminator; forward HTTPS through that terminator." >&2
+          exit 1
+        fi
+        export OMB_TRUSTED_PROXY_CIDRS="$${OMB_TRUSTED_PROXY_CIDRS:-0.0.0.0/0 ::/0}"
+        exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+    depends_on:
+      omb:
+        condition: service_started
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - edge:/run/openmausbot
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  data:
+    external: ${OMB_DATA_EXTERNAL:-false}
+    name: ${OMB_DATA_VOLUME:-${COMPOSE_PROJECT_NAME:-openmausbot}_data}
+  edge:
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: mode=1777,size=1m
+  caddy_data:
+  caddy_config:
