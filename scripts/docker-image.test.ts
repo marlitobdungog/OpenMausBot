@@ -57,8 +57,8 @@ describe("container images", () => {
     expect(all.at(-1)!.name).toBe("server");
     expect(all.find(s => s.name === "cloud-home")!.from).toBe("runtime");
     expect(all.find(s => s.name === "server")!.from).toBe("runtime");
-    // the build arg docker-compose.yml passes keeps its name and empty default
-    expect(chain("server")).toContainEqual({ op: "ARG", args: 'ENGINES=""' });
+    // Copilot is present in the self-hosted image by default; callers can override the package list.
+    expect(chain("server")).toContainEqual({ op: "ARG", args: 'ENGINES="@github/copilot"' });
   });
 
   it("puts the browser and the engines beneath the per-commit app files, so a code change leaves them as they were", () => {
