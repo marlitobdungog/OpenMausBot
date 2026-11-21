@@ -1,7 +1,7 @@
 name: ${COMPOSE_PROJECT_NAME:-openmausbot}
 services:
   omb:
-    image: ${API:?API image is missing from release.json}
+    image: ${API:?OpenMausBot image is missing from release.json}
     init: true
     shm_size: 512m
     restart: unless-stopped
@@ -10,6 +10,7 @@ services:
       - edge:/run/openmausbot
       - /home/zyke/openmausbot-ssh:/data/.config/ssh-mcp:ro
     environment:
+      TZ: Asia/Manila
       OMB_PORT: "8799"
       OMB_WEBHOOK_PORT: "8800"
       OMB_TUNNEL_SOCKET: /run/openmausbot/http.sock

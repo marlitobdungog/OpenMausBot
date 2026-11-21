@@ -32,6 +32,7 @@ services:
       - data:/data
       - edge:/run/openmausbot
     environment:
+      TZ: Asia/Manila
       OMB_PORT: "8799"
       OMB_WEBHOOK_PORT: "8800"
       # What Caddy connects to (deploy/Caddyfile).

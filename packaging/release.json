@@ -1,6 +1,6 @@
 {
-  "version": "v0.1.169",
+  "version": "v0.1.175",
   "images": {
-    "API": "asia-southeast1-docker.pkg.dev/myassistant-440206/docker-repo/openmausbot-omb:v0.1.169"
+    "API": "ghcr.io/milind-soni/openmausbot:v0.1.175"
   }
 }

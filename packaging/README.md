@@ -17,16 +17,17 @@ Build the installer package with:
 appctl package build --path .
 ```
 
-To publish the Linux AMD64 server image and create an appctl release:
+To publish an appctl release that uses the upstream server image pinned in
+`release.json`:
 
 ```sh
 make release
 ```
 
-That command requires Docker, gcloud authentication, permission to push to
-`asia-southeast1-docker.pkg.dev/myassistant-440206/docker-repo`, and the
-`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` variables required by appctl
-to publish the release.
+This publishes the installer release only; it does not build or push a Docker
+image. It requires the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
+variables required by appctl to publish the release. The server image is pulled
+from GitHub Container Registry.
 
 Install on a remote host with:
 

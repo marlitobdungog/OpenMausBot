@@ -8,7 +8,7 @@ services:
     build:
       context: ./deploy/local
       args:
-        BASE_IMAGE: ${OMB_BASE_IMAGE:-ghcr.io/milind-soni/openmausbot:latest}
+        BASE_IMAGE: ${OMB_BASE_IMAGE:-ghcr.io/milind-soni/openmausbot:v0.1.175}
         ENGINES: ${ENGINES-@anthropic-ai/claude-code @openai/codex}
     image: ${OMB_LOCAL_IMAGE:-openmausbot-local:latest}
     restart: unless-stopped
@@ -16,6 +16,7 @@ services:
       - data:/data
       - edge:/run/openmausbot
     environment:
+      TZ: Asia/Manila
       OMB_PORT: "8799"
       OMB_WEBHOOK_PORT: "8800"
       # Caddy, in its own container, reaches the server over these (deploy/local/Caddyfile). A request on a socket is
