@@ -9,6 +9,11 @@
       "mode": "0644"
     },
     {
+      "source": "Dockerfile",
+      "target": "/opt/{app-name}/Dockerfile",
+      "mode": "0644"
+    },
+    {
       "source": "Caddyfile",
       "target": "/opt/{app-name}/Caddyfile",
       "mode": "0644"

@@ -26,8 +26,10 @@ make release
 
 This publishes the installer release only; it does not build or push a Docker
 image. It requires the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
-variables required by appctl to publish the release. The server image is pulled
-from GitHub Container Registry.
+variables required by appctl to publish the release. On the host, Compose pulls
+the pinned base image from GitHub Container Registry and locally builds
+`openmausbot-marlito` with the CLI packages in `ENGINES` (GitHub Copilot by
+default). Set `ENGINES` in `/etc/openmausbot/.env` to add or change packages.
 
 Install on a remote host with:
 

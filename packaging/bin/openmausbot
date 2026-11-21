@@ -37,7 +37,20 @@ export API
 case "${1:-}" in
   up) shift; exec docker compose -f "$OPENMAUSBOT_COMPOSE_FILE" up -d "$@" ;;
   down) shift; exec docker compose -f "$OPENMAUSBOT_COMPOSE_FILE" down "$@" ;;
-  pull) shift; exec docker compose -f "$OPENMAUSBOT_COMPOSE_FILE" pull "$@" ;;
+  pull)
+    shift
+    if [ "$#" -eq 0 ]; then
+      docker compose -f "$OPENMAUSBOT_COMPOSE_FILE" pull caddy
+      exec docker compose -f "$OPENMAUSBOT_COMPOSE_FILE" build --pull omb
+    fi
+    for service in "$@"; do
+      if [ "$service" = omb ]; then
+        docker compose -f "$OPENMAUSBOT_COMPOSE_FILE" build --pull omb
+      else
+        docker compose -f "$OPENMAUSBOT_COMPOSE_FILE" pull "$service"
+      fi
+    done
+    ;;
   restart) shift; exec docker compose -f "$OPENMAUSBOT_COMPOSE_FILE" restart "$@" ;;
   *)
     printf 'Usage:\n  %s up\n  %s down\n  %s pull\n  %s restart\n' "$BIN_NAME" "$BIN_NAME" "$BIN_NAME" "$BIN_NAME"
