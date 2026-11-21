@@ -3,8 +3,9 @@ vi.mock("@/state/store", () => ({ api: vi.fn() }));
 import { api } from "@/state/store";
 import { EMPTY_ONBOARDING, type OnboardingStatus } from "@/lib/onboarding";
 import { BOAT_OFFER_NOTICE, CLOUD_INTRO, GROK_MOVE_NOTICE, MODELGO_OFFER_NOTICE, PRODUCT_HUNT_NOTICE, PRODUCT_HUNT_UNTIL, TEAMS_NOTICE, WHATS_NEW_NOTICE } from "@/lib/notices";
-import { announcementHistory, announcementsReadAt, announcementsUnread, BUILT_IN_ANNOUNCEMENTS, markAnnouncementsRead, READ_BASELINE, readMark, rememberNoticeSeen,
-  type HistoryFacts, type PersonRecord } from "./announcement-history";
+import { announcementHistory, announcementsReadAt, announcementsUnread, BUILT_IN_ANNOUNCEMENTS, firstListedVersion, markAnnouncementsRead, READ_BASELINE, readMark,
+  rememberNoticeSeen, withDownloadedUpdate, type HistoryFacts, type PersonRecord } from "./announcement-history";
+import type { ReleaseEntry } from "../../shared/release-notes";
 import { announcementsReadAt as readMarkOf, newestReadMarkOnly, personalHints, teamPersonalHint } from "../../shared/cloud-hints";
 import type { AnnouncementCard } from "../../shared/announcements";
 
@@ -94,6 +95,51 @@ describe("the red dot", () => {
   });
 });
 
+describe("releases", () => {
+  const release = (version: string, date: string): ReleaseEntry => ({ version, date, sections: [{ title: "Fixes", items: ["Faster."] }] });
+  const releases = [release("0.1.175", "2026-11-21T05:17:00Z"), release("0.1.173", "2026-11-19T23:52:37Z"), release("0.1.155", "2026-11-13T11:33:22Z")];
+  const listed = (facts: HistoryFacts) => announcementHistory({ facts, cards: [card("later", { starts: "2026-11-20T00:00:00Z" })], feedUpdatedAt: null, now: NOW, releases });
+  const read = (firstVersion: string | null, hints: string[] = [TEAMS_NOTICE]): PersonRecord => ({ record: record(hints), desktopSeen: [], firstVersion });
+
+  it("sit in the same newest-first timeline by their dates; a branded build lists none", () => {
+    const order = listed(desktopHere).map(item => item.id);
+    expect(order.slice(0, 6)).toEqual(["release-0.1.175", "later", "release-0.1.173", TEAMS_NOTICE, "release-0.1.155", MODELGO_OFFER_NOTICE]);
+    expect(order.at(-1)).toBe(CLOUD_INTRO);
+    expect(listed({ ...desktopHere, branded: true }).some(item => item.source === "release")).toBe(false);
+  });
+
+  it("a downloaded update the list lacks gets a row on top from its own notes; one the list has keeps its own; none when branded", () => {
+    const items = listed(desktopHere);
+    const update = { version: "0.1.176", notes: release("0.1.176", "2026-11-22T00:00:00Z") };
+    const withUpdate = withDownloadedUpdate(items, update, false, NOW);
+    expect(withUpdate[0]).toMatchObject({ source: "release", id: "release-0.1.176", pending: true });
+    expect(withUpdate[0]!.at).toBeGreaterThanOrEqual(items[0]!.at);
+    expect(withDownloadedUpdate(items, { ...update, version: "0.1.175" }, false, NOW)).toBe(items);
+    expect(withDownloadedUpdate(items, update, true, NOW)).toBe(items);
+    expect(withDownloadedUpdate(items, null, false, NOW)).toBe(items);
+  });
+
+  it("raise the dot only after the version first listed here, and only when newer than the last look; a downloaded update's own row never does", () => {
+    const items = listed(desktopHere).filter(item => item.id !== "later");
+    expect(announcementsUnread(items, read("0.1.175")), "a new install is not told about every release before it").toBe(false);
+    expect(announcementsUnread(items, read("0.1.173")), "the next release after it").toBe(true);
+    expect(announcementsUnread(items, read("0.1.173", [TEAMS_NOTICE, readMark(Date.parse("2026-11-22T00:00:00Z"))])), "looked since").toBe(false);
+    expect(announcementsUnread(items, read(null)), "nothing kept: releases never raise it").toBe(false);
+    const pending = withDownloadedUpdate(items, { version: "0.1.176", notes: release("0.1.176", "2026-11-22T00:00:00Z") }, false, NOW);
+    expect(announcementsUnread(pending, read("0.1.175"))).toBe(false);
+  });
+
+  it("the first version listed is kept from the first time, and is the running one when nothing can be kept", () => {
+    expect(firstListedVersion("0.1.175")).toBe("0.1.175");
+    expect(firstListedVersion("0.1.180")).toBe("0.1.175");
+    storage.clear();
+    expect(firstListedVersion("dev")).toBe("dev");
+    expect(storage.size, "a dev build keeps nothing").toBe(0);
+    vi.stubGlobal("localStorage", { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } });
+    expect(firstListedVersion("0.1.180")).toBe("0.1.180");
+  });
+});
+
 describe("opening Announcements and seeing a popup", () => {
   const desktop = { seen: vi.fn(async () => {}) };
   beforeEach(() => desktop.seen.mockClear());
@@ -113,7 +159,7 @@ describe("opening Announcements and seeing a popup", () => {
   it("on a Team Cloud: the person's own record, which members may write too, then the place's record read back", async () => {
     vi.mocked(api).mockImplementation(async path => (path === "/api/config" ? { onboarding: { hintsSeen: [readMark(NOW)] } } : { welcome: {} }));
     const saved = vi.fn();
-    markAnnouncementsRead(NOW, record(["teams-2026-11"]), { team: true, saved });
+    markAnnouncementsRead(NOW, record(["teams-2026-11b"]), { team: true, saved });
     for (let i = 0; i < 5; i++) await Promise.resolve();
     expect(vi.mocked(api).mock.calls).toEqual([["/api/me/welcome", { method: "PUT", body: JSON.stringify({ hints: [readMark(NOW)] }) }], ["/api/config"]]);
     expect(saved).toHaveBeenCalledWith({ onboarding: { hintsSeen: [readMark(NOW)] } });
