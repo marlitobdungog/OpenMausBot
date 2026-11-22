@@ -1,4 +1,4 @@
-.PHONY: release package-release update-version
+.PHONY: release package-release update-version run
 
 VERSION ?=
 BRANCH ?= marlito
@@ -7,6 +7,9 @@ release: package-release
 
 package-release:
 	appctl app release --path .
+
+run:
+	docker compose -f compose.dev.yaml up -d --build
 
 update-version:
 	@test -n "$(VERSION)" || { echo "Usage: make update-version VERSION=v0.1.176" >&2; exit 2; }

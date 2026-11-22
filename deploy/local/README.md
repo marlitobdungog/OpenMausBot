@@ -6,6 +6,10 @@ Compose supplies defaults; no `.env` file is required.
 The application container uses Docker's init process to reap orphaned agent
 subprocesses.
 
+To build the server from the repository's root `Dockerfile` and keep its data
+separate from the registry-based stack, run `make run` from the repository root
+and open http://localhost:8082. This uses `compose.dev.yaml`.
+
 To customize, copy `.env.example` to `.env` in the repository root.
 The `.env` file is ignored by Git. Shell environment variables take precedence.
 `OMB_HTTP_PORT` changes the host port and the default public URL.
