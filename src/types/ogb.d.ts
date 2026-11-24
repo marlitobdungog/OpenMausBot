@@ -25,6 +25,11 @@ const __APP_VERSION__: string;
   type DesktopSharedFolder = import("../../electron/computer-sharing.mjs").SharedFolder;
   type DesktopComputerSharing = import("../../electron/computer-sharing.mjs").SharingState;
   type DesktopLendingActivity = import("../../electron/computer-sharing.mjs").LendingActivityEntry;
+  /** Lending this computer to one server, as the switch shows it (electron/server-lending.mjs view). `why`: what keeps it
+   * from being lent there. `screen`: why its apps and screen don't work yet while it is on (screen-status.mjs). */
+  type DesktopLendView =
+    | { name: string; lendable: true; on: boolean; connected: boolean; paused: boolean; screen?: "starting" | "permissions" | "blocked" | "off" | "not-running" | "unsupported" }
+    | { name: string; lendable: false; why: "team" | "cloud" | "not-owner" | "shared" | "old" | "unreachable" | "settings" };
 
   type DesktopCapabilities = {
     host: {
@@ -62,6 +67,8 @@ const __APP_VERSION__: string;
       driverSource?: "bundled" | "environment" | "user-local" | "path" | "system-package";
       session?: "x11" | "wayland" | "headless" | "unknown";
       compositor?: "gnome-mutter" | "hyprland";
+      /** Set with the Wayland seat-safety block: false on a desktop that isn't Ubuntu, which may have no Xorg session. */
+      ubuntuDesktop?: boolean;
     };
   };
 
@@ -217,6 +224,9 @@ const __APP_VERSION__: string;
         /** Remove from list: a Cloud the window's rail lists as `removable`, by its circle's id, once the person said yes on
          * the rail's own page (refused on any other page). Absent on an older app. */
         remove?: (id: string) => Promise<{ outcome: import("../../electron/cloud-account.mjs").CloudRemoveOutcome }>;
+        /** Rename: a server the window's rail lists with `renames`, by its circle's id, under a name kept on this computer
+         * only. Absent on an older app. */
+        rename?: (id: string, name: string) => Promise<{ outcome: "saved" | "name" | "failed" | "unsupported" }>;
         /** Make a server of the person's own, which the rail lists with `makeHome`, their bots' home: the move starts. */
         makeHome?: (id: string) => Promise<{ started: true }>;
         /** The ids of the servers main offers Make … my home for now (none once a move is done). Absent on an older app. */
@@ -309,6 +319,17 @@ const __APP_VERSION__: string;
         /** Every Cloud and server of the person's own stops using this computer until resume(), as the icon's menu does. */
         pause?(): Promise<void>;
         resume?(): Promise<void>;
+      };
+      /** The one switch for lending this computer to a server of the person's own (electron/server-lending.mjs). On this
+       * app's own page `id` names the saved server; on a server's own page it is that server, whatever `id` says. */
+      lendComputer?: {
+        state(id: string | null): Promise<DesktopLendView>;
+        set(id: string | null, on: boolean): Promise<DesktopLendView>;
+        /** macOS: asks for Accessibility and Screen Recording, the one step the system itself requires. */
+        allowScreen(id: string | null): Promise<DesktopLendView>;
+        /** The add form's switch (this app's own page only): lend to the server about to be paired at `address` if it
+         * turns out to be the person's own. */
+        wish?(address: string, on: boolean): Promise<boolean>;
       };
       confirm(message: string): Promise<boolean>;
       getCapabilities(): Promise<DesktopCapabilities>;

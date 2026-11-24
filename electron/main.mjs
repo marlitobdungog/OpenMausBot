@@ -41,7 +41,7 @@ import { createActivityWindow } from "./lending-activity-window.mjs";
 import { missingPermissions } from "./lent-screen-failures.mjs";
 import { createScreenControl } from "./screen-control.mjs"; import { createAskPrompt } from "./ask-prompt.mjs";
 let startupScreen = null;
-let desktopTray = null;
+let desktopTray = null, linuxTray = null; // Linux: an Open/Quit icon the window never hides into, since not every desktop shows it.
 import { collisionFreeDownloadPath, defaultSaveName, openFolder, openHtmlCopy, openLogsFolder, revealDownloadWhenDone, revealInFolder, withSavableFile } from "./save-file.mjs";
 import { desktopViewerPermissionAllowed } from "./desktop-viewer-permissions.mjs";
 import { appPermissionHandlers, externalLinkUrl } from "./app-permissions.mjs";
@@ -449,12 +449,12 @@ const DESKTOP_CRASH_LOG_MAX_BYTES = 512 * 1024;
 let logStream = null;
 let desktopShutdownStarted = false;
 import { companionAdvertisedHostedUrl, companionEnabledAtRest, companionOriginTarget, companionPairing, companionPairingRenew, companionDeviceRoutes, companionStartsAtLaunch, companionCloudDesktopAccess, companionRouteOn, dismissCompanionNotice, rememberCompanionRoute, setCompanionMigrationFacts,
-  companionBrowserControlAccess, companionRevoke, companionRunning, companionSettings, companionState, rememberCompanionKeepAwake, setCompanionHostedUrl, setCompanionLifecycleListener, startCompanion, stopCompanion } from "./companion.mjs";
+  companionBrowserControlAccess, companionRevoke, companionRunning, companionSettings, companionState, rememberCompanionKeepAwake, setCompanionHostedUrl, setCompanionLifecycleListener, setCompanionProviderKeySaver, startCompanion, stopCompanion } from "./companion.mjs";
 import { createDesktopCompanionE2E, deviceCounts } from "./companion-e2e-desktop.mjs"; import { startCheckedManagedConnection } from "./managed-companion-start.mjs";
 import { autoStartCompanion } from "./companion-autostart.mjs";
 import { createPhoneLinkRoutes } from "./phone-link-routes.mjs"; import { reachableForKeepAwake } from "./keep-awake.mjs";
 import { createRoutineWakeHold, rememberRoutineWake, routineWakeSettings } from "./routine-wake.mjs";
-import { CREDENTIAL_PATCH, credentialSaveError } from "./credential-patch.mjs";
+import { CREDENTIAL_PATCH, credentialSaveError, serveCredentialSaves } from "./credential-patch.mjs";
 
 /** Second wall after preload's reduced bridge: computer-controlling IPC answers only the local server's UI.
  * Declared before any handler registration (temporal dead zone). */
@@ -1409,7 +1409,7 @@ ipcMain.on("desktop:unread-count", (event, value) => {
   applyUnreadBadge(sender);
 });
 
-const { LOCAL_ID, activeEnvironment, activeRemote, allowedOrigins, bootEnvironmentDir, otherPlaces, savedPlace, startupEnvironmentDir, withActive, withEnvironment, withEnvironmentLook, withLocalEnvironment, withMicrophone, withPlaceColor, withoutEnvironment, withOwnCloud, withTeam, placesMenuOptions, workspaceMenuTemplate, workspaceNavigationAllowed, workspaceSenderAllowed, workspaceSummary, workspaceWindowTitle } = environmentsModule;
+const { LOCAL_ID, activeEnvironment, activeRemote, allowedOrigins, bootEnvironmentDir, otherPlaces, savedPlace, startupEnvironmentDir, withActive, withEnvironment, withEnvironmentLook, withLocalEnvironment, withMicrophone, withPlaceColor, withPlaceName, withoutEnvironment, withOwnCloud, withTeam, placesMenuOptions, workspaceMenuTemplate, workspaceNavigationAllowed, workspaceSenderAllowed, workspaceSummary, workspaceWindowTitle } = environmentsModule;
 let environmentsState = { environments: [], activeId: LOCAL_ID };
 let computerSharing;
 
@@ -1480,9 +1480,9 @@ const lendingActivity = createActivityWindow({ BrowserWindow, icon: APP_ICON, ba
 let lendingTray = null;
 function lendingIndicator() {
   lendingTray ??= createLendingIndicator({
-    Tray, Menu, nativeImage, Notification, iconPath: APP_ICON, t: nativeT, onPause: () => sharingController().pause(), onActivity: () => lendingActivity.show(),
+    Tray: linuxTray?.Borrowed ?? Tray, Menu, nativeImage, Notification, iconPath: APP_ICON, t: nativeT, onPause: () => sharingController().pause(), onActivity: () => lendingActivity.show(),
     onResume: () => void sharingController().resume()?.catch(error => slog(`lending resume: ${error?.message ?? error}`)), onStartScreen: () => void screenControl.start(),
-    onTerminal: on => void lendingDialogs.lendTerminal(on, () => sharingController().lendTerminal(on)).catch(error => slog(`lending terminal: ${error?.message ?? error}`)), onQuit: process.platform === "win32" ? () => app.quit() : null,
+    onTerminal: on => void lendingDialogs.lendTerminal(on, () => sharingController().lendTerminal(on)).catch(error => slog(`lending terminal: ${error?.message ?? error}`)), onQuit: process.platform === "win32" || linuxTray ? () => app.quit() : null,
   });
   return lendingTray;
 }
@@ -1528,7 +1528,7 @@ function persistEnvironments(next) {
   try { railChanged(); } catch {}
 }
 
-function applyNativeLanguage() { relabelDesktop({ menu: refreshApplicationMenu, trays: [desktopTray, lendingTray], window: mainWindow, title: mainWindowTitle, badge: applyUnreadBadge }); }
+function applyNativeLanguage() { relabelDesktop({ menu: refreshApplicationMenu, trays: [desktopTray, linuxTray, lendingTray], window: mainWindow, title: mainWindowTitle, badge: applyUnreadBadge }); }
 
 async function workspaceMenuAction(action) {
   try { await action(); } catch (error) {
@@ -1622,7 +1622,7 @@ async function switchLocalEnvironmentTo(targetDir, targetId, quiet = false) {
       return failedSwitch();
     }
     switchSucceeded = true;
-    if (windowFollows()) navigateMainWindow(rendererOrigin());
+    if (windowFollows() && mainWindow && !mainWindow.isDestroyed()) navigateMainWindow(rendererOrigin());
     return { ok: true };
   } catch (error) {
     slog(`environment switch to ${targetDir} failed (${error?.message ?? error})`);
@@ -1903,7 +1903,7 @@ async function forgetEnvironment(id, purge = false, confirmed = false) {
       slog(`forget environment: purge skipped for ${env.dataDir}`);
     }
   }
-  persistEnvironments(withoutEnvironment(environmentsState, id));
+  persistEnvironments(withoutEnvironment(environmentsState, id)); if (env.kind !== "local") void ownHome?.kick().catch((error) => slog(`own home: ${error?.message ?? error}`));
   if (wasActive) navigateMainWindow(activeOrigin());
   if (!env.origin) return { ok: true };
   try {
@@ -2574,13 +2574,13 @@ const savedWorkspace = id => {
 };
 // The buying sheet (cloud-buy.mjs): its channels, and the Cloud's name and colour (Servers entry once listed).
 const cloudLook = createCloudLook({ store: lookFile(() => path.join(app.getPath("userData"), cloudTarget(process.env).look), fs), accountId: () => cloudAccount?.state().account?.id ?? null,
-  homeEntry: cloudHomeEntry, saveEntry: (origin, look) => persistEnvironments(withEnvironmentLook(environmentsState, origin, look)) });
+  homeEntry: cloudHomeEntry, saveEntry: (origin, look) => persistEnvironments(withEnvironmentLook(environmentsState, origin, look)), listedName: () => homeLook(cloudAccount?.state())?.name ?? null });
 const cloudBuy = installCloudBuy({ ipcMain, guard: localWorkspaceOnly, client: ensureCloudAccount, offersReady: cloudOffersReady, clipboard, look: cloudLook });
 const localServerRequest = (route, init = {}) => (serverProc && serverReady ? fetch(`http://127.0.0.1:${SERVER_PORT}${route}`, { ...init, redirect: "error", credentials: "omit", headers: { ...init.headers, [DESKTOP_MUTATION_HEADER]: desktopMutationToken } }) : Promise.reject(new Error("not running"))); launchRecord.deliverWith((part) => localServerRequest("/api/diagnostics/launch", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(part), signal: AbortSignal.timeout(5_000) }).then((res) => res.json()));
 const teamProfileSeeds = createTeamProfileSeeds({ teamFetch: (...args) => session.defaultSession.fetch(...args), localRequest: localServerRequest, log: slog });
 const oneHome = installOneHome({ ipcMain, clean: cleanWorkspace, cloudPage: cloudPageAsking, pageOrigin: activePageOrigin, confirmMove: confirmTeamMove, server: () => serverProc, cookieFetch: (...args) => session.defaultSession.fetch(...args), home: () => (myCloud() && cloudAccount ? { origin: myCloud(), grant: () => cloudAccount.pairHome() } : null), power: cloudPower, file: () => path.join(app.getPath("userData"), "cloud-send.json"), localRequest: localServerRequest, space: { disk: () => cloudPlanDisk(ensureCloudAccount().state()), grow: sizeGb => ensureCloudAccount().growDisk(sizeGb) }, reconnect: origin => signInCloudSession({ origin, mine: myCloud(), pair: () => ensureCloudAccount().pairHome(), fetch: (...args) => session.defaultSession.fetch(...args) }), window: () => (desktopRemoteAccess ? null : mainWindow), localOrigin: rendererOrigin, account: () => cloudAccount, journalFile: () => path.join(app.getPath("userData"), "one-home.json"), tempRoot: () => path.join(app.getPath("temp"), "openmaus-one-home"), lend: projects => sharingController().lendProjects(projects), phone: { paired: () => companionStartsAtLaunch({ remoteClient: Boolean(desktopRemoteAccess), serverReady }), start: () => startDesktopCompanion({ waitForHosted: false, remember: false }).then(() => {}) }, openHome: () => void showHome({ place: "cloud" }), openTeam: team => void showHome({ place: { team: team.id, name: team.name } }), openLocal: () => void showHome(), restart: () => relaunchAfterDesktopRemoteChange(), version: app.getVersion(), log: slog, other: () => ownHome, accountsHere: () => accountRing()?.count() ?? 1, chooses: true, t: nativeT }); ownHome = installOwnHome({ t: nativeT, localRequest: localServerRequest, fetch: (...args) => session.defaultSession.fetch(...args), environments: () => environmentsState.environments, handoff: what => oneHome.handoff(what), cloudJournal: () => oneHome.journal(), journal: jsonFile(path.join(app.getPath("userData"), "own-home.json")), choice: jsonFile(path.join(app.getPath("userData"), "own-home-choice.json")), sendState: jsonFile(path.join(app.getPath("userData"), "own-home-send.json")), lend: (projects, place) => sharingController().lendProjects(projects, place), phone: { paired: () => companionStartsAtLaunch({ remoteClient: Boolean(desktopRemoteAccess), serverReady }), start: () => startDesktopCompanion({ waitForHosted: false, remember: false }).then(() => {}) }, openHome: place => void workspaceMenuAction(() => switchEnvironment(place.id)), lastInput: oneHome.lastInput, version: app.getVersion(), log: slog, onChange: () => { oneHome.publish(); computerSharing?.cloudChanged(); railChanged(); } }); botLink = createBotLinkMain({ wanted: () => placesTogether.on(), pref: jsonFile(path.join(app.getPath("userData"), PLACES_TOGETHER_FILE)), localRequest: localServerRequest, fetch: (...args) => session.defaultSession.fetch(...args), cloud: () => ({ origin: myCloud(), account: cloudAccount?.state().account?.id ?? null, asleep: cloudPower.asleep(), signedOut: cloudAccount?.state().status === "signed-out" }), cloudName: () => nativeT("cloudSetup.myCloud"), changed: () => placesTogether.linkChanged(), log: slog }); twoPlaces = installTwoPlacesMain({ t: nativeT, ipcMain, guard: localWorkspaceOnly, localRequest: localServerRequest, fetch: (...args) => session.defaultSession.fetch(...args), environments: () => environmentsState.environments, cloud: () => ({ origin: myCloud(), asleep: cloudPower.asleep() }), oneHome, ownHome, dismissed: jsonFile(path.join(app.getPath("userData"), "two-places.json")), account: () => cloudAccount, teamsRemembered: jsonFile(path.join(app.getPath("userData"), "team-places.json")), log: slog, tell: () => { if (mainWindow && !mainWindow.isDestroyed() && senderIsLocal({ sender: mainWindow.webContents })) mainWindow.webContents.send("two-places:changed"); } });
 // Teams from the verified session as places this window shows (home-places.mjs): the one to open next time, and its lines.
-const homePlaces = createHomePlaces({ store: jsonFile(path.join(app.getPath("userData"), "home-place.json")), environments: () => environmentsState, persist: persistEnvironments, makeId: randomUUID, homeOrigin: myCloud, synced: state => teamLinks.changed(state), log: slog });
+const homePlaces = createHomePlaces({ store: jsonFile(path.join(app.getPath("userData"), "home-place.json")), environments: () => environmentsState, persist: persistEnvironments, makeId: randomUUID, homeOrigin: myCloud, homeName: name => cloudLook.homeName(name), synced: state => teamLinks.changed(state), log: slog });
 const homeWindow = createHomeWindow({ clean: cleanWorkspace, journal: oneHome.journal, frozen: oneHome.marker, account: () => (app.isPackaged && !desktopRemoteAccess ? cloudAccount : null), restored: cloudAccountRestored,
   window: () => (mainWindow && !mainWindow.isDestroyed() ? mainWindow : null), ensureWindow: () => { if (!mainWindow || mainWindow.isDestroyed()) createWindow({ deferNavigation: true }); },
   localOrigin: rendererOrigin, cookieFetch: (...args) => session.defaultSession.fetch(...args), power: cloudPower, splash: () => startupScreen, lastInput: oneHome.lastInput, rehomed: () => talk.homeChanged(), log: slog, t: nativeT,
@@ -2610,7 +2610,7 @@ const rail = installCloudRail({ t: nativeT, ipcMain, clipboard, openCloud: openO
   guard: handler => (event, ...args) => (chromeRail.owns(event) ? handler(event, ...args) : workspaceOnly(handler)(event, ...args)),
   lists: event => chromeRail.owns(event), trusted: event => chromeRail.owns(event) || senderIsLocal(event), beside: () => chromeRail.shown(),
   targets: () => [mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null, { send: channel => chromeRail.send(channel), isDestroyed: () => false }],
-  places: railList, ask: placeSwitch.ask, switching: placeSwitch.target, open: openPlace, makeHome: id => ownHome.start(id), forget: id => forgetEnvironment(id, false, true), openProfile: (id, stale = () => false) => workspaceMenuAction(async () => { await cleanWorkspace.settled(); if (stale()) return; const opened = await localProfiles.open(id); railChanged(); if (opened === false) throw new Error(nativeT("native.places.profileFailed")); }), local: localProfiles,
+  places: railList, ask: placeSwitch.ask, switching: placeSwitch.target, open: openPlace, makeHome: id => ownHome.start(id), forget: id => forgetEnvironment(id, false, true), rename: (id, name) => { const next = withPlaceName(environmentsState, id, name); if (next) persistEnvironments(next); return Boolean(next); }, openProfile: (id, stale = () => false) => workspaceMenuAction(async () => { await cleanWorkspace.settled(); if (stale()) return; const opened = await localProfiles.open(id); railChanged(); if (opened === false) throw new Error(nativeT("native.places.profileFailed")); }), local: localProfiles,
   add: { choices: () => ({ cloud: cloudOffersAllowed(), link: !desktopRemoteAccess, address: !desktopRemoteAccess && !homeWindow.cloudOrigin(), account: !desktopRemoteAccess && Boolean(accounts.view().active) }),
     probe: serverConnect.probe, run: (choice, link, code) => (choice === "link" ? (link ? (code === null ? connectHostedWorkspace(link) : serverConnect.connect(link, code)) : addServerFromClipboard()) : choice === "address" ? openWorkspaceSettings() : homeWindow.cloudOrigin() ? undefined : openCloudAdd("app_menu")) } });
 const announceAddedCloud = createAddedCloudNotice({ t: nativeT, Notification, focused: () => Boolean(mainWindow && !mainWindow.isDestroyed() && mainWindow.isFocused()), sheetOpen: rail.sheetOpen,
@@ -2623,7 +2623,7 @@ installPlaceLook({ ipcMain, guard: workspaceOnly, place: () => savedPlace(enviro
 const lendingDialogs = createLendingDialogs({ dialog, window: () => mainWindow, validate: validateSharedFolders, isHome: isHomeFolder, t: nativeT });
 // Settings → Servers' computer access, and the popup after pairing a server of the person's own (server-lending.mjs).
 const serverLending = installServerLending({ ipcMain, guard: localWorkspaceOnly, sharing: sharingController, dialogs: lendingDialogs, validate: validateSharedFolders, dialog, window: () => (mainWindow && !mainWindow.isDestroyed() ? mainWindow : null),
-  saved: savedWorkspace, candidate: lendableServer, flag: refreshSharedComputersAllowed, environments: () => environmentsState.environments, active: () => activeEnvironment(environmentsState), openSettings: openWorkspaceSettings, t: nativeT, log: slog });
+  saved: savedWorkspace, candidate: lendableServer, flag: refreshSharedComputersAllowed, environments: () => environmentsState.environments, active: () => activeEnvironment(environmentsState), openSettings: openWorkspaceSettings, t: nativeT, log: slog, screen: screenControl.now, allowScreen: screenControl.start, local: event => cloudPageAsking(event) === "local", page: event => { const env = activeEnvironment(environmentsState); return env?.origin && env.kind !== "local" && activePageOrigin(event) === env.origin ? env : null; } });
 
 const cloudSync = installCloudFiles({ t: nativeT,
   app, ipcMain, dialog, shell, powerMonitor, localWorkspaceOnly, localDataDir: desktopDataDir(),
@@ -2745,7 +2745,7 @@ async function saveWorkspaceCredential(name, value, options) {
 }
 
 installCredentialStoreIpc({ ipcMain, localOnly, dialog, windowFor: (sender) => BrowserWindow.fromWebContents(sender), t: nativeT, appName: () => app.name, unreadable: () => credentialStoreUnavailable, quitting: () => desktopShutdownStarted, moveAside: () => fs.renameSync(CREDENTIALS_FILE, `${CREDENTIALS_FILE}.unreadable-${Date.now()}`), log: slog, relaunch: relaunchAfterDesktopRemoteChange });
-ipcMain.handle("credential:set", localOnly("credential:set", (_event, name, value, options) => saveWorkspaceCredential(name, value, options)));
+serveCredentialSaves({ ipcMain, localOnly, setPhoneSaver: setCompanionProviderKeySaver, save: saveWorkspaceCredential });
 
 ipcMain.handle("approvals:set-trusted-mode", localOnly("approvals:set-trusted-mode", (_event, botId, mode, options) => {
   // A separately launched dev server is outside this trust path: never degrade this grant to loopback HTTP.
@@ -2791,13 +2791,13 @@ app.whenReady().then(async () => { launchRecord.mark("ready");
     clearCache: () => session.defaultSession.clearCache(),
     log: slog,
   });
-  if (process.platform === "win32") {
+  if (process.platform === "win32" || process.platform === "linux") {
     try {
-      desktopTray = createSystemTray({
-        Tray, Menu, nativeImage, iconPath: APP_ICON, t: nativeT,
+      const tray = createSystemTray({ Tray, Menu, nativeImage, iconPath: APP_ICON, t: nativeT,
         getWindow: () => startupScreen?.window ?? mainWindow ?? (openWindowForLink?.(), mainWindow),
         onQuit: () => app.quit(),
       });
+      if (process.platform === "win32") desktopTray = tray; else linuxTray = tray;
     } catch (error) {
       slog(`system tray unavailable: ${error?.message ?? error}`);
     }
@@ -3120,5 +3120,5 @@ function releaseDesktopDataDirLease() {
 
 // before-quit is too early (this app defers it); will-quit is Electron's last boundary, and the process hook covers app.exit().
 app.on("will-quit", releaseDesktopDataDirLease);
-app.on("will-quit", () => { desktopTray?.destroy(); void tailnetShare.stop(); });
+app.on("will-quit", () => { desktopTray?.destroy(); linuxTray?.destroy(); void tailnetShare.stop(); });
 process.once("exit", releaseDesktopDataDirLease);

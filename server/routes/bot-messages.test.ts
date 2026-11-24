@@ -19,6 +19,7 @@ import { acceptedSendMatch, sendFingerprint, SendSequencer } from "../send-idemp
 import { _queuedCount, drainSteeredMessages, queuedSteeredMessage, queueSteeredMessage } from "../steer-queue.ts";
 import { Store, type Message } from "../store.ts";
 import { sendingSession } from "../sending-sessions.ts";
+import { ownWindowLine } from "../own-window-sends.ts";
 import { typedWords } from "../typed-sends.ts";
 import { USER_ERROR } from "../user-errors.ts";
 import { createBotMessageRoutes, type BotMessageRouteDeps } from "./bot-messages.ts";
@@ -58,8 +59,8 @@ async function fixture(over: Partial<Record<keyof BotMessageRouteDeps, unknown>>
     started: Array<{ text: string; opts: StartOpts }>;
     relayed: Array<Parameters<BotMessageRouteDeps["relayedReaction"]>>;
     serverPresses: Array<{ threadId: string; messageId: string; type: string }>; serverAnswer: "handled" | "refused" | null; records: string | null;
-    fromPhone: boolean; phoneSends: string[];
-  } = { accepted: [], hold: null, refuse: null, busy: false, prompts: [], started: [], relayed: [], serverPresses: [], serverAnswer: null, records: null, fromPhone: false, phoneSends: [] };
+    fromPhone: boolean; phoneSends: string[]; setupSaw: boolean[];
+  } = { accepted: [], hold: null, refuse: null, busy: false, prompts: [], started: [], relayed: [], serverPresses: [], serverAnswer: null, records: null, fromPhone: false, phoneSends: [], setupSaw: [] };
   const startTurn: BotMessageRouteDeps["startTurn"] = async (botId, text, opts = {}) => {
     state.started.push({ text, opts });
     state.prompts.push(promptWithReply(text, opts.replyTo));
@@ -86,6 +87,8 @@ async function fixture(over: Partial<Record<keyof BotMessageRouteDeps, unknown>>
         return { ok: true as const, queued: true as const, queueId: queued.id, threadId: input.threadId };
       }
       const message = store.appendMessage(input.threadId, { role: "user", kind: "text", text: input.text, replyToId: input.replyTo?.id, sendId: input.sendId });
+      // A turn that starts at once may set up (lent computers included) before the send answers.
+      state.setupSaw.push(ownWindowLine(input.threadId, message));
       return { ok: true as const, threadId: input.threadId, message };
     });
   };
@@ -744,5 +747,79 @@ describe("POST /api/bots/:id/messages from a registered phone", () => {
     state.fromPhone = true;
     expect((await post({ threadId: "someone-elses-thread", sendId: OTHER_SEND, text: "Hi" })).status).toBe(409);
     expect(state.phoneSends).toEqual([]);
+  });
+});
+
+describe("POST /api/bots/:id/messages from the desktop app's own window", () => {
+  const words = "What can you see on my other Mac?";
+
+  it("notes a plain send from the desktop's own page as the window's", async () => {
+    const { threadId, post } = await fixture();
+    const plain = await post({ threadId, sendId: SEND, text: words });
+    expect(plain.status, JSON.stringify(plain.body)).toBe(202);
+    expect(ownWindowLine(threadId, plain.body.message)).toBe(true);
+  });
+
+  it("lets the turn a send starts at once see the window's line while it sets up", async () => {
+    const { threadId, state, post } = await fixture();
+    const plain = await post({ threadId, sendId: SEND, text: words });
+    expect(plain.status, JSON.stringify(plain.body)).toBe(202);
+    expect(state.setupSaw).toEqual([true]);
+  });
+
+  it("leaves no proof for a send that was refused", async () => {
+    const { threadId, state, post } = await fixture();
+    state.refuse = new DirectSendRefused(409, { error: "spend cap reached", code: "spend_cap" });
+    expect((await post({ threadId, sendId: SEND, text: words })).status).toBe(409);
+    expect(ownWindowLine(threadId, { role: "user", sendId: SEND, text: words })).toBe(false);
+  });
+
+  it("notes neither a press nor a relay", async () => {
+    const { store, bot, threadId, post, show } = await fixture();
+    const pressed = await post({ threadId, sendId: SEND, text: words, widgetAction: { messageId: show("routineForm"), ref: "confirm", values: { days: "mon,tue,wed,thu,fri,sat,sun", report: "discord:releases" } } });
+    expect(pressed.status, JSON.stringify(pressed.body)).toBe(202);
+    expect(ownWindowLine(threadId, pressed.body.message)).toBe(false);
+    store.patchBot(bot.id, { approvalMode: "ask", autoApprove: false });
+    const relayed = await post({ threadId, sendId: OTHER_SEND, text: words, expectedActiveLeafId: store.activeLeaf(threadId), expectedApprovalMode: "ask" }, "/guarded");
+    expect(relayed.status, JSON.stringify(relayed.body)).toBe(202);
+    expect(ownWindowLine(threadId, relayed.body.message)).toBe(false);
+  });
+
+  it("notes no proof for a send that only repeats or collides with a press already in the thread", async () => {
+    const { threadId, post, show } = await fixture();
+    const widgetId = show("routineForm");
+    const pressed = await post({ threadId, sendId: SEND, widgetAction: { messageId: widgetId, ref: "confirm", values: { days: "mon,tue,wed,thu,fri,sat,sun", report: "discord:releases" } } });
+    expect(pressed.status, JSON.stringify(pressed.body)).toBe(202);
+    const line = pressed.body.message;
+    expect((await post({ threadId, sendId: SEND, text: line.text })).status).toBe(409);
+    expect(ownWindowLine(threadId, line)).toBe(false);
+    const repeat = await post({ threadId, sendId: SEND, text: line.text, replyToId: widgetId });
+    expect(repeat.status, JSON.stringify(repeat.body)).toBe(202);
+    expect(repeat.body.message.id).toBe(line.id);
+    expect(ownWindowLine(threadId, line)).toBe(false);
+  });
+
+  it("notes no proof for a send that only repeats a press still waiting in the queue", async () => {
+    const { store, bot, threadId, state, post, show } = await fixture();
+    state.busy = true;
+    const widgetId = show("routineForm");
+    const pressed = await post({ threadId, sendId: SEND, widgetAction: { messageId: widgetId, ref: "confirm", values: { days: "mon,tue,wed,thu,fri,sat,sun", report: "discord:releases" } } });
+    expect(pressed.status, JSON.stringify(pressed.body)).toBe(202);
+    const waiting = queuedSteeredMessage(bot.id, threadId, SEND)!;
+    expect(waiting, "the press waits in the queue").toBeTruthy();
+    const repeat = await post({ threadId, sendId: SEND, text: waiting.text, replyToId: widgetId });
+    expect(repeat.status, JSON.stringify(repeat.body)).toBe(202);
+    expect(repeat.body.queueId).toBe(waiting.id);
+    drainSteeredMessages(store, () => {});
+    const line = store.messagesFor(threadId).find((message) => message.sendId === SEND);
+    expect(line?.text, "the press became the thread's line").toBe(waiting.text);
+    expect(ownWindowLine(threadId, line)).toBe(false);
+  });
+
+  it("does not note a bare loopback send on a headless server, where it may be a bot's shell", async () => {
+    const { threadId, post } = await fixture({}, false);
+    const plain = await post({ threadId, sendId: SEND, text: words });
+    expect(plain.status, JSON.stringify(plain.body)).toBe(202);
+    expect(ownWindowLine(threadId, plain.body.message)).toBe(false);
   });
 });

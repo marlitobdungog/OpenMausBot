@@ -1,8 +1,237 @@
 {
   "$schema": "./releases.schema.json",
   "version": 1,
-  "updatedAt": "2026-11-21T09:49:53Z",
+  "updatedAt": "2026-11-23T23:44:53Z",
   "releases": [
+    {
+      "version": "0.1.178",
+      "date": "2026-11-23T23:43:31Z",
+      "sections": [
+        {
+          "title": "Bots and work",
+          "items": [
+            "**Skill Burger.** While a bot works, a small card in the chat's corner stacks one layer for each real step it takes: an app action, a command that changed something, a file it wrote, a page it opened. Save a run as a workflow skill the bot can repeat.",
+            "**Memory per conversation.** A bot used for separate matters, such as one conversation per client, now keeps each matter's notes in that conversation. What it learns about you still applies everywhere.",
+            "**The Library tab shows everything a bot made**, across all its conversations, newest first. It's also much faster to open for bots with many conversations or big histories.",
+            "**Teammates on other servers.** In Advanced mode, an admin can add a bot that lives on another OpenMausBot server, and your bots can hand it work like any teammate. Settings → You and your bots → Teammates on other servers.",
+            "**Bots ask teammates for as many redos as the work needs.** A teammate on another server gets at most 4 redos per request.",
+            "**Change a setting for many bots at once.** A bot can apply one change to several bots, or all of them, with a single Undo.",
+            "**`/fork`** in the message box opens the fork panel.",
+            "**OpenRouter bots in Advanced mode** can choose the model their memory upkeep uses, with Automatic as the fallback.",
+            "**Closed threads stop showing as waiting on you.**",
+            "**A bot waiting for the computer is told its place in line.**",
+            "**Bots on a Cloud reuse what's already installed** instead of installing it again.",
+            "**Automations stay within the accounts each bot may use.**",
+            "**Text a bot page sends lands in the message box** for you to send, instead of sending on its own.",
+            "**Fewer surprises with fill-in sign-in:** pages that mark their only password box as \"new password\" (such as TikTok) now fill."
+          ]
+        },
+        {
+          "title": "Looks and chat",
+          "items": [
+            "**New bot bodies.** 21 new avatar bodies join the look pickers: controller, mug, ghost, rocket, cat and more. They come from Open Bot Avatar (MIT), have eyes that follow the pointer, and cheer once when a bot finishes. Our own shapes are redrawn to match. You can also pick a custom body colour.",
+            "**The window no longer flickers while a bot sits idle** on macOS. A bot's face now settles after a reply instead of animating for as long as the chat stays open.",
+            "**Simple mode chat runs under the header** with a soft fade, instead of being cut off by a solid band.",
+            "**The header's model pill folds to its icon** while the bot panel is open, and the panel glides open and closed.",
+            "**Simple mode sidebar:** a bot's conversations fold out under it.",
+            "**Themes:** ask a bot to use a picture from the chat as your background, or to draw and animate one itself.",
+            "**Replies fade in as they stream:** each new paragraph or code block fades in once, instead of popping in. Finished replies never replay it, and Reduce Motion turns it off.",
+            "**Escape leaves the message box** and keeps your draft."
+          ]
+        },
+        {
+          "title": "Computers and servers",
+          "items": [
+            "**Settings → Devices:** every device in one place: this computer, your Clouds and servers, paired phones and lent computers, with their state and the actions each already had.",
+            "**A chat on its own computer keeps it when forked.** Simple mode shows a small icon when a chat uses a different computer from its bot.",
+            "**Your own servers (VPS):** set each server's memory and cores, rename it, and remove it. Saving checks that the host really has what you set.",
+            "**Phones:** a phone on the desktop's encrypted route can reach the full server, and a page hidden on the phone relay saves its waiting bot edits first.",
+            "**Bot links between your places:** large batches of Chinese, Japanese or Korean results arrive; a hand-off whose file went missing is still delivered; Stop and Sleep cancel an exchange in flight."
+          ]
+        },
+        {
+          "title": "Vault",
+          "items": [
+            "**Larger secrets.** Vault secrets can now be up to 64 KiB, enough for cookie files or service-account JSON. After this update, this computer can't go back to 0.1.176 or earlier; 0.1.177 still works. A Cloud on an older version refuses a large secret with a clear message."
+          ]
+        },
+        {
+          "title": "Desktop",
+          "items": [
+            "**Windows:** scaled displays are read at the right size.",
+            "**Linux:** the Open/Quit tray icon shows, as on Windows. rpm updates install through dnf so their dependencies resolve.",
+            "**Spelling:** text fields' right-click menu has a Check Spelling option.",
+            "**Obsidian:** a link to an Obsidian note in chat opens the note.",
+            "**iPhone:** Safari's browser bar follows your skin.",
+            "**Boat:** when the browser can't open the Boat offer, its address is shown to copy."
+          ]
+        },
+        {
+          "title": "Fixes",
+          "items": [
+            "**Claude:** keep-warm pings and summaries count only their own cost in your usage, not the whole conversation's again.",
+            "**Kimi:** no longer drops tools whose options mix text and empty values.",
+            "**MCP:** a server whose address isn't an MCP endpoint is left out of turns and named once, instead of slowing every turn.",
+            "**Browser:** a slow first start says \"still starting\" instead of looking stuck, and a browser that dies says so at once.",
+            "**Antigravity turns start faster:** fewer calls before each turn, the model check moved off the turn's path, and a stalled start is handled.",
+            "**Antigravity:** a brief sign-in hiccup no longer counts as signed out or hands the chat to the backup engine.",
+            "**Rooms:** a room turn no longer counts the computer's sleep as silence.",
+            "**Codex:** GPT-6.2 Sol and Astra are in the API-key model list. On Linux, ssh errors inside the sandbox come with a short note on why.",
+            "**Bitwarden:** a self-hosted Vaultwarden with a private certificate authority connects.",
+            "**Files and page videos** always release their file handle.",
+            "**Typing in Chinese, Japanese and similar keyboards:** confirming a candidate with Enter or Escape no longer saves or closes the department memory dialog.",
+            "**The first start after this update takes longer, once**, while it builds a faster index for the Bot Library: a few seconds on most computers, and up to about a minute on the very largest histories (millions of messages). Later starts are as fast as before.",
+            "Many smaller reliability fixes from contributors."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.1.177",
+      "date": "2026-11-22T16:22:19Z",
+      "sections": [
+        {
+          "title": "Bots and work",
+          "items": [
+            "**See what your bots said to each other.** When a bot hands work to a teammate, the hand-off shows as a small chip with the teammate's face and name. Click it to read their conversation right in the chat, live, with \"Back\" to return to where you were.",
+            "**Handed-off conversations get real names.** A conversation a teammate opens is named after the job it was handed.",
+            "**Reasoning sticks.** In Simple mode, picking a Reasoning level in a bot's panel now also makes it that bot's default, the same way Model does. New conversations start at that level.",
+            "**Chief of Staff mail checks** also read your connected Outlook.",
+            "**A failed turn says why it ended** in its summary.",
+            "**Codex \"Compact now\"** compacts the conversation in place.",
+            "**Your project's skills win.** With \"Use my Claude Code skills\" on, a project skill takes priority over your own skill of the same name.",
+            "**Lighter isolated Claude turns:** they no longer load your `~/.claude/rules`."
+          ]
+        },
+        {
+          "title": "Models and providers",
+          "items": [
+            "**Gemini 4 Neon** works in Antigravity with its thinking levels, including model names that carry the level (such as \"-high\").",
+            "**Google AI Studio** is in the main provider list.",
+            "**Devin and other ACP engines** keep their model list when reading it runs slow, and the picker says why a list couldn't be read.",
+            "**DeepSeek's spoken replies** play correctly."
+          ]
+        },
+        {
+          "title": "Vault",
+          "items": [
+            "**Bitwarden Secrets Manager** can be a Vault and sign-in source.",
+            "**Getting ready for larger secrets.** This version can read Vault secrets up to 64 KiB, such as cookie files or service-account JSON. Saving them switches on in the next update. Until then the limit stays at 4 KiB, so you can still go back to an earlier version safely."
+          ]
+        },
+        {
+          "title": "Computers and servers",
+          "items": [
+            "**Name your servers.** Rename a server you added by hand from its menu in the sidebar.",
+            "**VPS bots pick a server.** Each VPS bot can choose which named server it runs on.",
+            "**Your Cloud keeps the name** you chose at setup.",
+            "**Lent Macs:** chats typed in the desktop app's own window can use a lent Mac on a one-person server. The lending menu now says bots use the computer you type on.",
+            "**Cloud computer clicks follow your approval level.** On a cloud or remote computer, Claude's computer actions now ask under Ask or Edits, with \"allow for this session\". Full access is unchanged.",
+            "**A stuck Docker** no longer slows every check by 10 seconds.",
+            "**Self-hosted servers:** phones paired over the relay can open live screens and browser views. Removing the server that is your home brings this computer's copy back."
+          ]
+        },
+        {
+          "title": "Voice and languages",
+          "items": [
+            "**Chinese in live calls:** a clear Chinese request ends the call, and a Chinese yes or no answers a permission card.",
+            "**Italian** is almost fully translated."
+          ]
+        },
+        {
+          "title": "Fixes",
+          "items": [
+            "**Connected apps:** if the connected-apps service doesn't answer when a conversation starts, bots still get its search and run tools, not just Gmail and Calendar.",
+            "**Google Drive, Sheets and Docs:** bots use your connected Google app instead of asking you to sign in to another editor's Google tools, a sign-in that couldn't finish.",
+            "**Grok:** a brief sign-in hiccup is no longer reported as signed out, and a routine tries once more. Choosing a model your Grok sign-in doesn't offer now names the models it does offer, instead of failing with a config hint.",
+            "**Browser:** a slow start on a busy computer no longer fails with \"No matching tab opened\". The first tab gets up to a minute.",
+            "**Teammates** no longer show a bot as \"needs setup\" once its AI account works again.",
+            "**Sign-in cards** that wait for you sit under the chat header instead of covering the conversation.",
+            "**File links** outside the workspace open in their folder on the first click.",
+            "**Team Files** tells you a file is too big before uploading it.",
+            "**Hermes** keeps its shared gateway running when one conversation stops.",
+            "An idle app and an idle Cloud wake up far less often in the background.",
+            "Many smaller reliability fixes from contributors."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.1.176",
+      "date": "2026-11-21T21:30:49Z",
+      "sections": [
+        {
+          "title": "Updates and announcements",
+          "items": [
+            "**A blue update button.** In Simple mode, a round blue button appears right after Connect apps while an update downloads or is ready. Click it to restart into the new version. It disappears once you're updated.",
+            "**What each update brought.** Announcements now lists every release, newest first. Each card says what that update brought, and \"See all changes\" shows the full list."
+          ]
+        },
+        {
+          "title": "Bots and work",
+          "items": [
+            "**Check before done (per bot, off by default).** Turn it on, and a bot's answer is checked by another bot before it reaches you.",
+            "**A writer and a checker.** New ready-made bots in Templates → Writing: Nib edits only what you asked, and Vera checks the result against your document.",
+            "**What changed.** When a bot edits a document you gave it, you can see exactly what changed, sentence by sentence. The bot can check its own changes instead of describing them from memory.",
+            "**Saved tool approvals.** \"Always allow\" is now remembered for an exact tool from a connected app or MCP server. It is never remembered for anything that sends, posts or moves money, or for phone, shared-computer or this-computer control.",
+            "**New conversations a bot opens** take the approval level of the chat that opened them.",
+            "**Grok bots** use fewer processes per session, recover from the out-of-threads crash, resume faster after an idle close, and switch model and effort in place.",
+            "**Routines on Starter** wake their paused bot instead of failing."
+          ]
+        },
+        {
+          "title": "Voice",
+          "items": [
+            "**Free dictation on Windows** uses Windows' built-in speech recognition. No download and no outside service.",
+            "**⌘D (Ctrl+D on Windows and Linux)** turns dictation on and off while you're typing a message.",
+            "**Spoken replies start sooner:** the next sentence is prepared while the current one plays.",
+            "**Chatterbox** lists its own voices."
+          ]
+        },
+        {
+          "title": "Browser",
+          "items": [
+            "**Your clicks, keys and dropdown picks reach the page** in a bot's browser view on the default engine, and a dropped press no longer blocks the ones after it.",
+            "**A bot no longer reports success when an action failed** in the browser.",
+            "**Lighter browsers:** fewer processes per bot browser, and unused browsers close first when memory runs low.",
+            "**A sign-in card's Open** wakes a browser that went to sleep."
+          ]
+        },
+        {
+          "title": "Cloud and computers",
+          "items": [
+            "**Clearer Cloud messages:** the app says when a turn can't run commands, and that moving to another computer keeps your files.",
+            "**A routine refused the lent computer** now ends as failed and says why.",
+            "**Self-hosted servers:** bots can use a lent computer and run commands on the server's own desktop, and they know which lent computer you're typing on.",
+            "**Bots see their conversation's attachments** in room and own-folder turns.",
+            "**A busy Cloud recovers better:** unused browsers close first, and the only busy engine stops once the machine starts thrashing."
+          ]
+        },
+        {
+          "title": "Backups and data",
+          "items": [
+            "**Full backups** now include bots' Data tables and take the bursts database whole while it's being written.",
+            "**Backup export** survives a proxy timeout or a page reload.",
+            "**Usage limits** can now be set per bot.",
+            "**Up to 1,000 templates** in a catalog."
+          ]
+        },
+        {
+          "title": "Fixes",
+          "items": [
+            "Usage bars keep their last reading when a usage check fails.",
+            "Ctrl+= zooms in on Windows and Linux.",
+            "A refused settings change says why and what to do.",
+            "The Inbox lists an automation's question only once.",
+            "The asking chat says \"Waiting on…\" when handed-off work stops on a sign-in or review card.",
+            "Dismissing an earlier day's brief card stays inside the brief.",
+            "`fill_login` counts saved logins that have no username.",
+            "An older message that arrives while a conversation's history is still loading no longer jumps ahead of the newest reply.",
+            "Interval routines across a clock change, app automations sharing one service, move retries and several smaller reliability fixes from contributors."
+          ]
+        }
+      ]
+    },
     {
       "version": "0.1.175",
       "date": "2026-11-21T05:17:00Z",
@@ -1010,113 +1239,6 @@
             "Automations filter by department, and a waiting run can be cancelled.",
             "Older usage-limit notices are marked as past once their reset time has gone.",
             "Linux shows which libraries Chrome needs when they are missing."
-          ]
-        }
-      ]
-    },
-    {
-      "version": "0.1.149",
-      "date": "2026-11-08T12:36:46Z",
-      "sections": [
-        {
-          "title": "Clouds stay up when bots hand out a lot of work",
-          "items": [
-            "**No more freezes when one bot hands work to many.** When many bot turns waited for memory at once, the server could use all its CPU re-checking the queue and stop answering. Waiting is now cheap, so the Cloud keeps working while the queue drains.",
-            "**Starter runs two tasks at once.** Other tasks wait their turn, and your own chat still goes first. Once two are running and four are waiting, a new hand-off is refused with a clear note, and you're offered an upgrade to run more.",
-            "**Starter keeps five bots awake, including after a restore or a move.** Every bot is kept. Bots past five are paused until you upgrade, and you choose which five stay awake (Cloud settings → Choose awake bots)."
-          ]
-        },
-        {
-          "title": "Your own server can use this computer",
-          "items": [
-            "**One popup after pairing.** When a desktop pairs with a server you run yourself, it asks **\"Let your server use this computer?\"**. **Allow** lends the apps on your screen and this computer's MCP servers. **Not now** lends nothing and isn't asked again.",
-            "**Settings → Servers → Share this computer.** A switch turns sharing on or off at any time, and **Choose what it can use** picks folders, the terminal, apps and the screen. Pause in the menu bar covers these servers too.",
-            "Only a server you paired with as its admin counts. Clouds keep their own sharing rules, and a shared or team server never gets your computer this way."
-          ]
-        },
-        {
-          "title": "More engines",
-          "items": [
-            "**Kiro** is a built-in engine. Its model picker lists your account's models plus **Kiro default**.",
-            "**Native Claude Code and Codex on an API key.** Each key-based connection is its own engine. Hosts without a model list (DeepSeek, GLM and others) can be added by typing the model, and keys are only ever sent over HTTPS."
-          ]
-        },
-        {
-          "title": "This computer on Omarchy (experimental)",
-          "items": [
-            "On Omarchy and other Hyprland desktops, **This computer** works with Cua's Hyprland plugin: bots act in their own agent seats while you keep using the screen. Settings → Computer shows whether the plugin is ready and links the setup guide."
-          ]
-        },
-        {
-          "title": "Fixes and smaller changes",
-          "items": [
-            "**Bots list only the imported skills that fit them** and find the rest by search, instead of listing every skill in every prompt. Bots pick the right skill more often, and each turn sends less to the model.",
-            "**Computer use** runs on Cua Driver 0.41.3 on macOS, Windows and Linux."
-          ]
-        }
-      ]
-    },
-    {
-      "version": "0.1.148",
-      "date": "2026-11-07T21:50:56Z",
-      "sections": [
-        {
-          "title": "Connecting to your own server is simpler",
-          "items": [
-            "**One way to connect.** In the app, ＋ → **Connect to a server** takes the link your server prints, or its address and a pairing code. A plain `http://` address works on your own network (Wi-Fi, Tailscale, `.local`); a public `http://` address is refused with what to do instead.",
-            "**One pairing code.** Servers and the web `/pair` page use the same 12-character code, and a code of the wrong kind says so.",
-            "**Commands that work when pasted.** The server prints one link per way in, checks that the address really reaches it, and prints every command the way you started it (npx, a global install or Docker). `--lan` makes it reachable on this network.",
-            "**Nothing starts by itself.** Each way into this computer has its own switch, all off by default. Tailscale and the phone link never start until you turn them on, and a desktop that only connects to your server starts none of it.",
-            "**Phone & devices** shows who can reach this computer, with one **Pair a device** dialog. **Servers** says how each server is reached, retries a lost connection on its own, and offers Pair again and Remove.",
-            "The self-hosting guide now has one short path per install method and a troubleshooting table."
-          ]
-        },
-        {
-          "title": "The private desktop stays chosen",
-          "items": [
-            "A bot's **Where it works** now offers **Private desktop**.",
-            "On **Let it choose**, a bot keeps the place you picked, and starts your private desktop before waking or creating a cloud computer."
-          ]
-        },
-        {
-          "title": "Fixes and smaller changes",
-          "items": [
-            "**Codex** starts on the chosen model's provider.",
-            "Linked files over 25 MB are saved, and size limits are explained plainly.",
-            "**Long OpenRouter turns** no longer stop on the reasoning size limit.",
-            "**Google sign-in** is handed to you when Google refuses the bot's browser.",
-            "**Routines** read the newest account when several Gmail accounts are connected.",
-            "**The automation editors and shared-instruction dialogs** no longer lag or spin up the fan.",
-            "**A failed connected-apps connection** no longer fails the whole turn.",
-            "**An MCP tool's approval card** names the custom server asking for it.",
-            "**Paired clients** can use \"Continue when your limit resets\".",
-            "**A Watch button** shows while a bot uses its screen.",
-            "**Traditional Chinese** is complete. French uses \"vous\" in the Cloud move messages.",
-            "Notification previews show as plain text.",
-            "The sign-in pill slows its checks when a server is down, then says so.",
-            "More security hardening around proxies, local key checks and shared working folders."
-          ]
-        }
-      ]
-    },
-    {
-      "version": "0.1.147",
-      "date": "2026-11-07T17:12:56Z",
-      "sections": [
-        {
-          "title": "Meeting notes",
-          "items": [
-            "Paste a Google Meet, Microsoft Teams or Jitsi link and a bot joins the call as a guest. It names itself, says in the chat that it's taking notes, and leaves when asked.",
-            "Ask it questions during the call with @notes. When the call ends it posts a Meeting notes card: summary, decisions, action items and the full transcript with who said what.",
-            "A calendar routine can send it to your meetings automatically.",
-            "On a Cloud plan, transcription is included. Elsewhere, use your own ElevenLabs, Groq or OpenAI key, or a local Whisper model."
-          ]
-        },
-        {
-          "title": "Fixes",
-          "items": [
-            "**\"Internal service failure (session/new, LocationNotFoundError)\" on a Cloud:** fixed. OpenCode chats on a Cloud failed in every conversation after a bot's first one; each conversation now reaches its own folder.",
-            "**Phone connection:** a second relay server now shares the load."
           ]
         }
       ]

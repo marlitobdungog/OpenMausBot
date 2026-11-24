@@ -58,6 +58,7 @@ export const VITEST_SUBSETS = {
       "electron/cua-watch-restart.test.mjs",
       "electron/cua-windows-isolation.test.mjs",
       "electron/menu.test.mjs",
+      "electron/phone-key-credential.test.mjs",
       "electron/updater.test.mjs",
       "scripts/generate-locale.test.mjs",
       "scripts/testing/bot-tools-ui.e2e.test.ts",
@@ -216,6 +217,7 @@ export const SRC_OUTSIDE_RENDERER = [
   "src/lib/peer-message.ts",
   "src/lib/random-uuid.ts",
   "src/lib/receipts.ts",
+  "src/lib/relay-server.ts",
 ];
 
 export const DOCS = /^(?:[^/]+\.md|docs\/.+\.md|\.github\/FUNDING\.yml)$/;
